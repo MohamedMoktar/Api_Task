@@ -12,6 +12,7 @@
         "laravel/telescope": "^4.14",
         "laravel/tinker": "^2.8",
         "laravel/ui": "^4.2",
+        "twilio/sdk": "^7.2",
         "tymon/jwt-auth": "^2.0"
     },
     "require-dev": {
