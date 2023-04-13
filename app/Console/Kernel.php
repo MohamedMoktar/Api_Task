@@ -14,7 +14,7 @@ class Kernel extends ConsoleKernel
     {
         //  $schedule->command('inspire')->
         //  everyMinute()->
-        //  storeOutPut();
+        //  storeOutput();
        
     }
 
