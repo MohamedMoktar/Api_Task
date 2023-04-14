@@ -20,4 +20,6 @@ Route::get('/', function () {
 Auth::routes();
 
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+
+//this rout and controller for testing  if twilio is work and it pass the test
 Route::get('sendSMS', [App\Http\Controllers\TwilioSMSController::class, 'index']);
