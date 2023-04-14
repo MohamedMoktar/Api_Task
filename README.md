@@ -64,3 +64,10 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+#API task 
+login ,register  and getting profile data
+crud for users by admin
+
+#Using Jwt for authentications 
+#Useing twilio sms gateway to send sms to verify mobile number
