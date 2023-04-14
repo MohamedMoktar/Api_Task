@@ -48,7 +48,7 @@ class AuthController extends Controller
         if($validator->fails()){
             return response()->json($validator->errors()->toJson(), 400);
         }
-
+       
         $user = User::create(array_merge(
                     $validator->validated(),
                     ['password' => bcrypt($request->password)]
@@ -79,7 +79,7 @@ class AuthController extends Controller
             'phone_number' => $data['phone_number'],
             'password' => Hash::make($data['password']),
         ]);
-         redirect()->route('verify')->with(['phone_number' => $data['phone_number']]);
+        return redirect()->route('verify')->with(['phone_number' => $data['phone_number']]);
     }
     
     protected function verify(Request $request)

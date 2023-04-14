@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Admin\UserController;
 
 /*
 |--------------------------------------------------------------------------
@@ -31,4 +32,11 @@ Route::group([
     Route::post('/verify', [AuthController::class, 'verify'])->name('verify');
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user-profile', [AuthController::class, 'userProfile']);    
+});
+
+Route::group(['middleware' => ['api','auth', 'IsAdmin']], function () {
+   
+    Route::resource('users', UserController::class);
+    Route::post('user-update/{id}', [UserController::class,'update']);
+   
 });

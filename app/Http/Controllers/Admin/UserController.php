@@ -3,10 +3,16 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
+use App\Http\Requests\Admin\UserStoreRequest;
+use App\Http\Requests\Admin\UserUpdateRequest;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
+use App\Models\User;
 use Carbon\Carbon;
+use App\Http\Requests\Admin\StoreUserRequest;
+use App\Http\Requests\Admin\UpdateUserRequest;
+use App\Http\Resources\UserResource;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Http\Response;
 
 class UserController extends Controller
 {
@@ -15,12 +21,13 @@ class UserController extends Controller
      */
     public function index()
     {
-        $users =User::Where('isAdmin',0)->get();
-        $data = [
-            'users' => $users
-        ];
-      
-        return view('admin.users.index',$data);
+        //get all users who is not admin
+        $users = User::Where('isAdmin',0)->get();
+        return response()->json([
+            'message' => 'Ok',
+            'status' => Response::HTTP_OK,
+            'data' => UserResource::collection($users)
+        ]);
     }
 
     /**
@@ -28,21 +35,23 @@ class UserController extends Controller
      */
     public function create()
     {
-        return view('admin.users.create');
+        //
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(UserStoreRequest $request)
     {
-        $data = $request->all();
-        $data['email_verified_at'] = Carbon::now();
-        $data['password'] = Hash::make($request->password);
-        User::create($data);
-        return redirect()->route('users.index')->with([
-            'message' => 'User Added Successfully',
-            'alert' => 'success'
+        $request['password']=Hash::make($request->password);
+        $user = User::create(
+            $request->all(),
+          );
+      
+        return response()->json([
+            'message' => 'Created',
+            'status' => Response::HTTP_CREATED,
+            'data' => new UserResource($user)
         ]);
     }
 
@@ -51,7 +60,19 @@ class UserController extends Controller
      */
     public function show(string $id)
     {
-        //
+        $user = User::find($id);
+        if ($user) {
+            return response()->json([
+                'message' => 'Ok',
+                'status' => Response::HTTP_OK,
+                'data' => new UserResource($user)
+            ]);
+        }else {
+            return response()->json([
+                'message' => 'Not Found',
+                'status' => Response::HTTP_NOT_FOUND
+            ]);
+        }
     }
 
     /**
@@ -59,26 +80,31 @@ class UserController extends Controller
      */
     public function edit(string $id)
     {
-        $user=User::where('id',$id);
-        $data = [
-            'user' => $user
-        ];
-        return view('admin.users.edit',compact('data'));
+        //
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(UserUpdateRequest $request, string $id)
     {
-        $data = $request->all();
-        $user=User::where('id',$id);
+        $request['password']=Hash::make($request->password);
+        $user = User::find($id);
 
-        $user->update($data);
-        return redirect()->route('users.index')->with([
-            'message' => 'User Updated Successfully',
-            'alert' => 'success'
-        ]);
+        if ($user) {
+                $user->update($request->all());
+                return response()->json([
+                    'message' => 'Updated',
+                    'status' => Response::HTTP_NO_CONTENT
+                ]);
+            }
+          
+        else {
+            return response()->json([
+                'message' => 'Not Found',
+                'status' => Response::HTTP_NOT_FOUND
+            ]);
+        }
     }
 
     /**
@@ -86,16 +112,18 @@ class UserController extends Controller
      */
     public function destroy(string $id)
     {
-        $user = User::find($id);
-        if($user){
-          
+        $user = user::find($id);
+        if ($user) {
             $user->delete();
-        
-        return redirect()->route('users.index')->with([
-            'message' => 'User Deleted Successfully',
-            'alert' => 'danger'
-        ]);
-    }
-    return redirect()->route('dashbord')->with(['message'=> 'Wrong ID!!']);
+            return response()->json([
+                'message' => 'Deleted',
+                'status' => Response::HTTP_NO_CONTENT
+            ]);
+        } else {
+            return response()->json([
+                'message' => 'Not Found',
+                'status' => Response::HTTP_NOT_FOUND
+            ]);
+        }
     }
 }
