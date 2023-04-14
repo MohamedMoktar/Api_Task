@@ -11,14 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('phone_verifications', function (Blueprint $table) {
+        Schema::create('user_otps', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('phone_numper')->unique();
-            $table->string('password');
-            $table->boolean('isAdmin')->default(false);
-            $table->boolean('isVerified')->default(false);
-            $table->rememberToken();
+            $table->foreignId('user_id')->constrained('users')->cascadeOnUpdate()->cascadeOnDelete();
+            $table->string('otp');
+            $table->timestamp('expired_at')->nullable();
             $table->timestamps();
         });
     }
@@ -28,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('users');
+        Schema::dropIfExists('user_otps');
     }
 };

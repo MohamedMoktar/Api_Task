@@ -3,6 +3,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
+use App\Models\User_otp;
 use Validator;
 use Twilio\Rest\Client;
 use Illuminate\Support\Facades\Hash;
@@ -48,68 +49,78 @@ class AuthController extends Controller
         if($validator->fails()){
             return response()->json($validator->errors()->toJson(), 400);
         }
+
        
         $user = User::create(array_merge(
                     $validator->validated(),
                     ['password' => bcrypt($request->password)]
                 ));
+
+         //generate otp for user
+         $now=now(); 
+         $userOtp= User_otp::create([
+             'user_id'=>$user->id,
+             'otp'    =>rand(123456,999999),
+             'expired_at'=>$now->addMinutes(10),
+             ]);
+ 
+         //send  this otp in sms to user by twilio
+          $userOtp->sendSms($request->phone_numper); 
+        
+         //redirect to verfiy route to verfiy the otp
+        // return redirect()->route('verify')->with('otp has been sent in your mobile number');
+ 
+        //but this line is commented beacuse we dont have a free twilio phone number
+
         return response()->json([
             'message' => 'User successfully registered',
             'user' => $user
         ], 201);
     }
 
-    protected function create(Request $request)
-    {
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'phone_number' => ['required', 'string', 'unique:users','min:11'],
-            'password' => ['required', 'string',  'confirmed'],
-        ]);
-        /* Get credentials from .env */
-        $token = getenv("TWILIO_TOKEN");
-        $twilio_sid = getenv("TWILIO_SID");
-        $twilio_verify_sid = getenv("TWILIO_FROM");
-        $twilio = new Client($twilio_sid, $token);
-        $twilio->verify->v2->services($twilio_verify_sid)
-            ->verifications
-            ->create($data['phone_number'], "sms");
-        User::create([
-            'name' => $data['name'],
-            'phone_number' => $data['phone_number'],
-            'password' => Hash::make($data['password']),
-        ]);
-        return redirect()->route('verify')->with(['phone_number' => $data['phone_number']]);
-    }
-    
-    protected function verify(Request $request)
-    {
-        $data = $request->validate([
-            'verification_code' => ['required', 'numeric'],
-            'phone_number' => ['required', 'string'],
-        ]);
-        /* Get credentials from .env */
-        $token = getenv("TWILIO_TOKEN");
-        $twilio_sid = getenv("TWILIO_SID");
-        $twilio_verify_sid = getenv("TWILIO_FROM");
-        $twilio = new Client($twilio_sid, $token);
-        $verification = $twilio->verify->v2->services($twilio_verify_sid)
-            ->verificationChecks
-            ->create(array_merge($data['verification_code'], array('to' => $data['phone_number'])));
-        if ($verification->valid) {
-            $user = tap(User::where('phone_number', $data['phone_number']))->update(['isVerified' => true]);
-            /* Authenticate user */
-            Auth::login($user->first());
-            return response()->json([
-                'message' => 'User successfully registered',
-                
-            ], 201);
+    public function generateOtp($phone_numper){
+        $user=User::where('phone_numper',$phone_numper)->firet();
+        $userOtp=User_otp::where('user_id',$user->id)->latest()->first();
+        $now=now();
+
+          //if he has otp and not expired
+        if($userOtp && $now->isBefore($userOtp->expired_at)){
+            return $userOtp;
         }
-        return response()->json([
-            'message' => 'invallid phone number',
-            
-        ]);
+
+        //create otp if there is no one
+        return User_otp::create([
+            'user_id'=>$user->id,
+            'otp'    =>rand(123456,999999),
+            'expired_at'=>$now->addMinutes(10),
+            ]);
     }
+
+   public function verify(Request $request){
+
+        $request->validate([
+            'opt'=>'required',
+            'user_id'=>'required|exists:users,id'
+        ]);
+
+        $userOtp=User_otp::where('user_id',$request->user_id)->where('opt',$request->opt)->first();
+
+        $now=now();
+        if(!$userOtp){
+            return response()->json([
+                'message' => 'your otp is not correct',  
+            ]);
+        }
+        else if($userOtp && $now->isAfter($userOtp->expired_at)){
+            return response()->json([
+                'message' => 'your otp is expired ',  
+            ]);
+        }
+        else{
+           // do what you want 
+        }
+
+   }
 
 
     /**
